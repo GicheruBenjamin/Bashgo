@@ -1,124 +1,57 @@
-#!/bin/bash
 
-# Go to the root of the computer
-cd ~
-echo "We are back to the root directory of your computer."
+#!bin/bash
 
-# Ask if the user wants to create a new folder or open an existing one
-echo -e "Do you want to: \n1. Create a new folder \n2. Open an existing folder"
-sleep 3
-read -p "Enter 1 or 2: " choice
+# Going to root directory
+cd /
 
-if [[ "$choice" == "1" ]]; then
-    # Create a new folder
-    read -p "Enter the name of the new folder: " folder_name
-    mkdir "$folder_name"
-    echo "Folder '$folder_name' created."
+# List folder in the computer and choose workspace 
+ls -l
+read -p "Do you want to use an old/ create a new folder ()? (old/ new)" choice1
+
+# Old or new choices logic
+if [ "$choice1" = "old" ]; then
+    read -p "Enter the name of the old folder: " folder_name
+    if [ -d "$folder_name" ]; then
+    echo "Folder found. Entering..."
+    sleep 3
     cd "$folder_name"
-elif [[ "$choice" == "2" ]]; then
-    # Open an existing folder
-    read -p "Enter the path to the existing folder: " folder_path
-    if [[ -d "$folder_path" ]]; then
-        cd "$folder_path"
-        echo "Changed to existing folder '$folder_path'."
+    # Create a project folder
+    read -p"Enter the name of a new project folder:" new_project_folder
+    mkdir "$new_project_folder"
+    echo "Project folder created successfully."
+    sleep 3
+    cd "$new_project_folder"
+    # Initialize the go 
+    go mod init "$new_project_folder"
+    echo "Go module initialized successfully."
+    sleep 3
+    # Create main.go file
+    touch main.go
+    echo "main.go file created successfully."
+    sleep 3
+    # Creating packages directories
+    read -p "Would u like to create packages directories (y/n):: " package_choice
+    if [ "$package_choice" = "y" ]; then
+    read -p "Enter the name/s spaced of package/s" packages_names
+    mkdir -p "${packages_names// / }"
+    echo "Packages directories created successfully."
+    sleep 3
+    # Creatin modules for each package
+    
     else
-        echo "Folder '$folder_path' does not exist. Exiting."
+    echo "Folder not found."
         exit 1
     fi
+elif [ "$choice1" = "new" ]; then   
+    read -p "Enter the name of the new folder which will be your project folder: " folder_name
+    mkdir "$folder_name"
+    cd "$folder_name"
 else
-    echo "Invalid option. Exiting."
+    echo "Invalid choice. Please try again."
     exit 1
 fi
 
-# Initialize the Go project
-echo "Initializing a new Go project..."
-go mod init "$(basename "$PWD")"
-echo "Go module initialized."
 
-# Create the main.go file
-cat << EOF > main.go
-package main
 
-import "fmt"
 
-func main() {
-    fmt.Println("Hello, World!")
-}
-EOF
-echo "main.go created."
 
-# Ask the user what packages they want to create
-read -p "Enter the package names (space-separated): " packages
-
-# Loop over each package and create its directory and file
-for package in $packages; do
-    # Create the package directory
-    mkdir -p "$package"
-    
-    # Ask for the name of the file to create inside the package
-    read -p "Enter the name of the file for package '$package': " file_name
-    
-    # Create the file inside the package
-    cat << EOF > "$package/$file_name.go"
-package $package
-
-import "fmt"
-
-// $file_name function that prints the package and filename
-func $file_name() {
-    fmt.Println("I am $file_name of $package")
-}
-EOF
-    echo "File '$file_name.go' created in package '$package'."
-done
-
-# Update main.go to call the functions from each created package
-for package in $packages; do
-    # Ask for the file names in each package and add import statements in main.go
-    read -p "Enter the function name to call from package '$package': " func_name
-    sed -i "/import (/{n;s|)|\t\"./$package\"|\n\t\"./$package\"|}" main.go
-    sed -i "/func main()/a \\n\t$package.$func_name()" main.go
-done
-echo "main.go updated with package imports and function calls."
-
-# Create and configure .gitignore, Makefile, and README.md
-echo "Creating basic configuration files..."
-
-# .gitignore setup
-echo "/bin/" > .gitignore
-echo "/vendor/" >> .gitignore
-echo "Initial .gitignore created."
-
-# README.md setup
-cat << EOF > README.md
-# $(basename "$PWD")
-This is a Go project created with a custom Bash script.
-
-## Project Setup
-1. Clone the repository
-2. Run `go run main.go` to see the output
-EOF
-echo "README.md created."
-
-# Makefile setup
-cat << EOF > Makefile
-build:
-    go build -o bin/$(basename "$PWD") main.go
-
-run:
-    go run main.go
-
-clean:
-    rm -rf bin/
-EOF
-echo "Makefile created."
-
-# Git operations
-echo "Initializing Git repository..."
-git init
-git add .
-git commit -m "feature: Project engine starts"
-echo "Git repository initialized, files added, and initial commit made."
-
-# Done
-echo "Project setup is complete!"
